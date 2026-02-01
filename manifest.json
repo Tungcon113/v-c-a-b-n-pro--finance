@@ -1,0 +1,18 @@
+
+{
+  "name": "Ví của bạn - Nmap Finance",
+  "short_name": "Ví của bạn",
+  "description": "Quản lý tài chính cá nhân tối giản phong cách iOS.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#000000",
+  "icons": [
+    {
+      "src": "https://lh3.googleusercontent.com/aida-public/AB6AXuCVjTujGaGQUR3Laej8B2Oilua5e-NmBA1HV5IRdYUqPEpMh_3NtmrccXt8bOxvRHeElGQNQ4bOwOcReM2LQtp7YU2PMgkTnm-fVRAS0U6lgVXYmCUSMBsWI31aQktRql_4fTHfg7wn94Yc36hfj2VY9Y8vV1QGGEARFQTS7fsgUH2Rk0XldICBaDjOuYq0wWiORgJZGwU9KSQcTaYu9CB5MU8tG55NhsBuqECx10nZXRXghAzMJB0Bir9q3PMxQ9t56lHjU36UW3cb",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
