@@ -1,26 +1,68 @@
+
 import { GoogleGenAI } from "@google/genai";
+import { Transaction, Wallet } from "../types";
 
-export const getFinancialAdvice = async (transactions: any[], userPrompt: string) => {
-  // Code này sẽ tự tìm đúng "chìa khóa" sếp dán trên Vercel
-  const apiKey = import.meta.env.VITE_GOOGLE_API_KEY || process.env.API_KEY;
+/**
+ * Trợ lý tài chính AI siêu cấp cho sếp Tùng.
+ * Đã sửa lỗi truy cập response.text và xử lý lỗi kết nối.
+ */
+export const getFinancialAdvice = async (
+  transactions: Transaction[], 
+  userPrompt: string, 
+  wallets: Wallet[] = [], 
+  monthlyLimit: number = 0
+) => {
+  // Lấy key trực tiếp từ môi trường đã được Vite define
+  const apiKey = process.env.API_KEY;
 
-  if (!apiKey || apiKey.length < 10) {
-    return "Dạ sếp Tùng ơi, em chưa thấy 'chìa khóa' VITE_GOOGLE_API_KEY. Sếp nhớ dán vào Vercel rồi 'Redeploy' nhé!";
+  if (!apiKey || apiKey === "undefined" || apiKey.length < 10) {
+    return "❌ Báo cáo sếp Tùng: Em chưa thấy API_KEY đâu cả! Sếp vui lòng vào Vercel Settings -> Environment Variables, thêm biến API_KEY và dán mã 'AIzaSy...' vào, sau đó nhớ nhấn REDEPLOY nhé.";
   }
 
   try {
-    const genAI = new GoogleGenAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    // Khởi tạo instance mới mỗi lần gọi để đảm bảo lấy đúng key mới nhất
+    const ai = new GoogleGenAI({ apiKey });
     
-    const historyText = transactions.length > 0 
-      ? transactions.slice(0, 10).map(t => `- ${t.title}: ${t.amount.toLocaleString()}đ`).join('\n')
-      : "Chưa có giao dịch nào.";
+    // Chuẩn bị dữ liệu tài chính của sếp
+    const totalBalance = wallets.reduce((sum, w) => sum + w.balance, 0);
+    const walletInfo = wallets.map(w => `${w.name}: ${w.balance.toLocaleString()}đ`).join(", ");
+    const recentTx = transactions.slice(0, 10).map(t => `${t.title} (${t.amount.toLocaleString()}đ)`).join(", ");
 
-    const systemPrompt = `Bạn là trợ lý tài chính của "sếp Tùng". Lịch sử chi tiêu: ${historyText}. Trả lời lễ phép, xưng em.`;
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview', // Model mới nhất, nhanh và thông minh
+      contents: [{ parts: [{ text: userPrompt }] }],
+      config: {
+        systemInstruction: `Bạn là trợ lý tài chính riêng tên là 'Em Bé Nmap', cực kỳ đàng hoàng và chuyên nghiệp.
+        Đối tượng phục vụ: sếp Tùng (Luôn gọi là 'sếp Tùng', xưng 'em').
+        Ngữ cảnh: sếp Tùng đang có tổng cộng ${totalBalance.toLocaleString()}đ trong các ví (${walletInfo}). 
+        Hạn mức chi tiêu tháng này là ${monthlyLimit.toLocaleString()}đ. 
+        Giao dịch gần đây: ${recentTx}.
+        Phong cách: Lễ phép, thỉnh thoảng hài hước, tư vấn sát thực tế, không nói suông.`,
+        temperature: 0.8,
+      },
+    });
 
-    const result = await model.generateContent([systemPrompt, userPrompt]);
-    return result.response.text();
+    // QUAN TRỌNG: Dùng .text (property) chứ không phải .text() (method)
+    const reply = response.text;
+
+    if (!reply) {
+      return "Dạ sếp, em nghe rõ rồi nhưng ý tưởng của em đang hơi 'kẹt', sếp hỏi lại câu khác được không ạ?";
+    }
+
+    return reply;
+
   } catch (error: any) {
-    return "❌ Lỗi: Chìa khóa sếp đưa bị sai hoặc hết hạn rồi ạ!";
+    console.error("Lỗi AI rồi sếp ơi:", error);
+    
+    // Phân loại lỗi để sếp dễ xử lý
+    if (error.message?.includes("403") || error.message?.includes("API_KEY_INVALID")) {
+      return "❌ Sếp Tùng ơi, cái API_KEY này bị sai hoặc hết hạn rồi ạ. Sếp lấy cái mới ở Google AI Studio dán lại giúp em!";
+    }
+    
+    if (error.message?.includes("429") || error.message?.includes("quota")) {
+      return "Dạ sếp, em đang bị 'quá tải' vì sếp hỏi nhanh quá. Sếp đợi em thở tí (khoảng 10 giây) rồi hỏi tiếp nha!";
+    }
+
+    return `Dạ thưa sếp Tùng, đường truyền đang có chút vấn đề: ${error.message?.slice(0, 80)}... Sếp thử lại giúp em với!`;
   }
 };
