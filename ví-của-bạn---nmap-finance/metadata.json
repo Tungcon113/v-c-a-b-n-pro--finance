@@ -1,8 +1,0 @@
-{
-  "name": "Ví của bạn - Nmap Finance",
-  "description": "Ứng dụng quản lý tài chính cá nhân phong cách iOS tối giản, tích hợp AI.",
-  "requestFramePermissions": [
-    "camera",
-    "microphone"
-  ]
-}
