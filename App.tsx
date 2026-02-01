@@ -24,6 +24,7 @@ import SplitBill from './components/SplitBill';
 import LockScreenWidget from './components/LockScreenWidget';
 import AppIconSelection from './components/AppIconSelection';
 import DownloadApp from './components/DownloadApp';
+import TransactionVerification from './components/TransactionVerification';
 import { Transaction, AppTab, UserProfile, Language, Currency, Wallet, AuthStep } from './types';
 import { MOCK_TRANSACTIONS, INITIAL_WALLETS } from './constants';
 
@@ -35,7 +36,6 @@ const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [view, setView] = useState<AppTab>('overview');
   
-  // Dữ liệu người dùng hiện tại
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [wallets, setWallets] = useState<Wallet[]>([]);
@@ -44,12 +44,10 @@ const App: React.FC = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   
-  // App Config States
   const [language, setLanguage] = useState<Language>('vi');
   const [currency, setCurrency] = useState<Currency>('VND');
   const [profileImage, setProfileImage] = useState('https://picsum.photos/400/400');
 
-  // 1. Khởi tạo & Kiểm tra session khi mở app
   useEffect(() => {
     const users = JSON.parse(localStorage.getItem(USERS_STORAGE_KEY) || '[]');
     const loggedEmail = localStorage.getItem(CURRENT_USER_KEY);
@@ -63,7 +61,6 @@ const App: React.FC = () => {
     }
   }, []);
 
-  // 2. Đồng bộ dữ liệu vào LocalStorage mỗi khi có thay đổi
   useEffect(() => {
     if (currentUser) {
       const users = JSON.parse(localStorage.getItem(USERS_STORAGE_KEY) || '[]');
@@ -150,6 +147,7 @@ const App: React.FC = () => {
       }));
     }
     setShowAddModal(false);
+    setView('overview');
   };
 
   const handleChangePassword = (newPass: string) => {
@@ -177,14 +175,15 @@ const App: React.FC = () => {
       case 'overview': return <Dashboard transactions={transactions} wallets={wallets} onAddClick={() => setShowAddModal(true)} onAssistantClick={() => setView('assistant')} onWalletsClick={() => setView('wallets')} onSplitBillClick={() => setView('split_bill')} onUpdateWallet={(id, amt) => setWallets(prev => prev.map(w => w.id === id ? { ...w, balance: amt } : w))} profileImage={profileImage} currency={currency} />;
       case 'wallets': return <WalletsList wallets={wallets} onBack={() => setView('overview')} onUpdateWallet={(id, amt) => setWallets(prev => prev.map(w => w.id === id ? { ...w, balance: amt } : w))} currency={currency} />;
       case 'analysis': return <Analysis transactions={transactions} />;
-      case 'assistant': return <Assistant transactions={transactions} onBack={() => setView('overview')} />;
+      case 'assistant': return <Assistant transactions={transactions} wallets={wallets} monthlyLimit={monthlyLimit} onBack={() => setView('overview')} />;
       case 'budget': return <BudgetManager transactions={transactions} monthlyLimit={monthlyLimit} onUpdateLimit={setMonthlyLimit} />;
       case 'settings': return <Settings onLogoutRequest={() => setShowLogoutConfirm(true)} onEditProfile={() => setView('personal_info')} onEditPicture={() => setView('edit_profile')} onLanguage={() => setView('language')} onCurrency={() => setView('currency')} onChangePassword={() => setView('change_password')} onWidgetConfig={() => setView('widget_config')} onAppIcon={() => setView('app_icon')} onDownloadApp={() => setView('download_app')} profileImage={profileImage} userProfile={currentUser} language={language} currency={currency} />;
       case 'personal_info': return <PersonalInfo profile={currentUser} onBack={() => setView('settings')} onSave={(p) => { setCurrentUser(p); setView('settings'); }} />;
       case 'change_password': return <ChangePassword onBack={() => setView('settings')} onSave={handleChangePassword} />;
       case 'language': return <LanguageSelection current={language} onBack={() => setView('settings')} onSelect={(l) => setLanguage(l)} />;
       case 'currency': return <CurrencySelection current={currency} onBack={() => setView('settings')} onSelect={(c) => setCurrency(c)} />;
-      case 'scanner': return <CameraScanner onBack={() => setView('overview')} onComplete={() => setView('overview')} />;
+      case 'scanner': return <CameraScanner onBack={() => setView('overview')} onComplete={() => setView('verification')} />;
+      case 'verification': return <TransactionVerification wallets={wallets} onBack={() => setView('scanner')} onCancel={() => setView('overview')} onConfirm={handleAddTransaction} />;
       case 'split_bill': return <SplitBill onBack={() => setView('overview')} onScanClick={() => setView('scanner')} />;
       case 'widget_config': return <LockScreenWidget onBack={() => setView('settings')} balance={totalBalance} />;
       case 'app_icon': return <AppIconSelection onBack={() => setView('settings')} />;
