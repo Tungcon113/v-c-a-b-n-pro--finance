@@ -1,7 +1,13 @@
 
-import React, { useState } from 'react';
-import { Transaction, Wallet } from '../types';
+import React, { useState, useMemo } from 'react';
+import { Transaction, Wallet, TransactionType } from '../types';
 import { CATEGORIES } from '../constants';
+
+interface ReceiptItem {
+  id: string;
+  name: string;
+  price: number;
+}
 
 interface TransactionVerificationProps {
   onBack: () => void;
@@ -11,20 +17,28 @@ interface TransactionVerificationProps {
 }
 
 const TransactionVerification: React.FC<TransactionVerificationProps> = ({ onBack, onCancel, onConfirm, wallets }) => {
-  // Dữ liệu mặc định 15.000.000đ như sếp yêu cầu
-  const [amount, setAmount] = useState('15.000.000');
-  const [source, setSource] = useState('Công ty ABC');
+  // Giả lập danh sách mặt hàng AI vừa quét được
+  const [items, setItems] = useState<ReceiptItem[]>([
+    { id: '1', name: 'Phở Bò Đặc Biệt', price: 75000 },
+    { id: '2', name: 'Cà Phê Muối', price: 45000 },
+    { id: '3', name: 'Nước Suối', price: 10000 },
+  ]);
+  
+  const [source, setSource] = useState('Tiệm Ăn Sáng');
+  const [type, setType] = useState<TransactionType>('expense');
+  const [category, setCategory] = useState('Ăn uống');
+  const [walletId, setWalletId] = useState(wallets[0]?.id || 'cash');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
-  const [category, setCategory] = useState('Lương');
-  const [walletId, setWalletId] = useState(wallets[1]?.id || 'bank');
+
+  // Tính tổng tiền từ danh sách mặt hàng
+  const totalAmount = useMemo(() => items.reduce((sum, item) => sum + item.price, 0), [items]);
 
   const handleConfirm = () => {
-    const numericAmount = parseInt(amount.replace(/\./g, ''));
     const newTx: Transaction = {
       id: Date.now().toString(),
       title: source || 'Giao dịch từ hóa đơn',
-      amount: numericAmount,
-      type: category === 'Lương' || category === 'Thưởng' ? 'income' : 'expense',
+      amount: totalAmount,
+      type: type,
       category: category,
       date: date,
       walletId: walletId
@@ -32,15 +46,19 @@ const TransactionVerification: React.FC<TransactionVerificationProps> = ({ onBac
     onConfirm(newTx);
   };
 
+  const removeItem = (id: string) => {
+    setItems(items.filter(i => i.id !== id));
+  };
+
   return (
     <div className="flex flex-col h-screen bg-white dark:bg-zinc-950 animate-in slide-in-from-bottom duration-500 overflow-y-auto hide-scrollbar pb-32">
-      {/* Header chuẩn mẫu sếp gửi */}
+      {/* Header */}
       <header className="sticky top-0 z-50 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md p-4 flex items-center justify-between border-b border-gray-100 dark:border-white/5">
         <button onClick={onBack} className="flex items-center gap-1 text-black dark:text-white active-scale">
           <span className="material-symbols-outlined !text-[20px]">arrow_back_ios</span>
           <span className="text-sm font-bold -ml-1">Quay lại</span>
         </button>
-        <h2 className="text-base font-black dark:text-white">Kiểm tra thông tin</h2>
+        <h2 className="text-base font-black dark:text-white">Kiểm tra hóa đơn</h2>
         <button onClick={onCancel} className="text-gray-400 text-sm font-bold active-scale">Hủy</button>
       </header>
 
@@ -52,103 +70,102 @@ const TransactionVerification: React.FC<TransactionVerificationProps> = ({ onBac
             className="w-full h-full object-cover"
             alt="Receipt"
           />
-          <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur px-3 py-1.5 rounded-full flex items-center gap-1 shadow-lg border border-black/5">
-            <span className="material-symbols-outlined text-[18px]">zoom_in</span>
-            <span className="text-[10px] font-black uppercase tracking-tighter">Chạm để phóng to</span>
+          <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur px-3 py-1.5 rounded-full flex items-center gap-1 shadow-lg">
+            <span className="material-symbols-outlined text-[18px]">auto_awesome</span>
+            <span className="text-[10px] font-black uppercase tracking-tighter text-emerald-600">AI đã bóc tách</span>
           </div>
         </div>
       </div>
 
       <div className="px-6 space-y-8 mt-4">
-        <div>
-          <h3 className="text-2xl font-black dark:text-white tracking-tight">Chi tiết giao dịch</h3>
-          <p className="text-xs text-gray-400 font-medium mt-1">Vui lòng xác minh lại thông tin thu nhập của bạn.</p>
+        <div className="flex justify-between items-end">
+          <div>
+            <h3 className="text-2xl font-black dark:text-white tracking-tight">Chi tiết món ăn</h3>
+            <p className="text-xs text-gray-400 font-medium mt-1">Sếp kiểm tra lại từng món nhé.</p>
+          </div>
+          <div className="text-right">
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Tổng cộng</p>
+            <p className="text-2xl font-black text-black dark:text-white tracking-tighter">{totalAmount.toLocaleString('vi-VN')}₫</p>
+          </div>
         </div>
 
-        {/* Số tiền 15tr */}
+        {/* Danh sách mặt hàng */}
         <div className="space-y-3">
-          <div className="flex justify-between items-center">
-             <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Số tiền</label>
-             <div className="flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-900/20 px-2.5 py-1 rounded-full border border-emerald-100 dark:border-emerald-500/20">
-                <span className="material-symbols-outlined text-[14px] text-emerald-500 fill-1">auto_awesome</span>
-                <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest">Trích xuất tự động</span>
-             </div>
-          </div>
-          <div className="flex items-center bg-gray-50 dark:bg-zinc-900 rounded-2xl p-4 border border-transparent focus-within:border-black dark:focus-within:border-white transition-all">
-             <span className="text-3xl font-black text-black dark:text-white mr-2 opacity-30">₫</span>
-             <input 
-               value={amount}
-               onChange={(e) => setAmount(e.target.value)}
-               className="flex-1 bg-transparent border-none p-0 text-3xl font-black text-black dark:text-white focus:ring-0"
-             />
-             <span className="material-symbols-outlined text-gray-300">edit</span>
-          </div>
-        </div>
-
-        {/* Nguồn thu */}
-        <div className="space-y-3">
-          <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Nguồn thu / Nội dung</label>
-          <div className="flex items-center bg-gray-50 dark:bg-zinc-900 rounded-2xl p-4 border border-transparent focus-within:border-black dark:focus-within:border-white transition-all">
-             <input 
-               value={source}
-               onChange={(e) => setSource(e.target.value)}
-               className="flex-1 bg-transparent border-none p-0 text-base font-bold text-black dark:text-white focus:ring-0"
-             />
-             <span className="material-symbols-outlined text-gray-300">corporate_fare</span>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-3">
-            <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Ngày</label>
-            <div className="flex items-center bg-gray-50 dark:bg-zinc-900 rounded-2xl p-4 border border-transparent">
-              <input 
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className="flex-1 bg-transparent border-none p-0 text-sm font-bold text-black dark:text-white focus:ring-0"
-              />
+          {items.map((item) => (
+            <div key={item.id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-zinc-900 rounded-2xl border border-transparent hover:border-black/5 dark:hover:border-white/5 transition-all">
+              <div className="flex items-center gap-3">
+                <button onClick={() => removeItem(item.id)} className="size-6 rounded-full bg-rose-500/10 text-rose-500 flex items-center justify-center active-scale">
+                  <span className="material-symbols-outlined text-sm font-bold">close</span>
+                </button>
+                <span className="text-sm font-bold dark:text-white">{item.name}</span>
+              </div>
+              <span className="text-sm font-black text-black dark:text-white">{item.price.toLocaleString('vi-VN')}₫</span>
             </div>
-          </div>
-          <div className="space-y-3">
-            <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Hạng mục</label>
-            <div className="flex items-center bg-gray-50 dark:bg-zinc-900 rounded-2xl p-4 border border-transparent">
-               <select 
-                 value={category}
-                 onChange={(e) => setCategory(e.target.value)}
-                 className="flex-1 bg-transparent border-none p-0 text-sm font-bold text-black dark:text-white focus:ring-0 appearance-none"
-               >
-                 {CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-               </select>
-               <span className="material-symbols-outlined text-gray-300 text-sm">expand_more</span>
-            </div>
-          </div>
+          ))}
+          <button className="w-full py-3 border-2 border-dashed border-gray-100 dark:border-white/5 rounded-2xl text-gray-400 text-[10px] font-black uppercase tracking-widest hover:text-black dark:hover:text-white transition-colors">
+            + Thêm món khác
+          </button>
         </div>
 
-        <div className="space-y-3">
-          <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Nạp vào ví</label>
-          <div className="flex gap-2 overflow-x-auto hide-scrollbar py-1">
-            {wallets.map(w => (
-              <button 
-                key={w.id} 
-                onClick={() => setWalletId(w.id)}
-                className={`flex items-center gap-2 px-4 py-3 rounded-2xl border transition-all shrink-0 ${walletId === w.id ? 'bg-black dark:bg-white text-white dark:text-black border-transparent shadow-lg' : 'bg-gray-50 dark:bg-zinc-900 text-gray-400 border-transparent'}`}
+        <div className="h-px bg-gray-50 dark:bg-white/5"></div>
+
+        {/* Thông tin giao dịch */}
+        <div className="space-y-6">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 px-1">Loại</label>
+              <div className="flex p-1 bg-gray-100 dark:bg-zinc-800 rounded-xl">
+                <button onClick={() => setType('expense')} className={`flex-1 py-2 text-[10px] font-black rounded-lg transition-all ${type === 'expense' ? 'bg-white dark:bg-zinc-700 shadow-sm text-black dark:text-white' : 'text-gray-400'}`}>CHI</button>
+                <button onClick={() => setType('income')} className={`flex-1 py-2 text-[10px] font-black rounded-lg transition-all ${type === 'income' ? 'bg-white dark:bg-zinc-700 shadow-sm text-black dark:text-white' : 'text-gray-400'}`}>THU</button>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 px-1">Hạng mục</label>
+              <select 
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                className="w-full h-10 bg-gray-50 dark:bg-zinc-900 border-none rounded-xl px-3 text-xs font-bold dark:text-white focus:ring-0"
               >
-                <span className="material-symbols-outlined text-lg">{w.icon}</span>
-                <span className="text-[11px] font-black whitespace-nowrap">{w.name}</span>
-              </button>
-            ))}
+                {CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+              </select>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 px-1">Nguồn chi / Thu</label>
+            <input 
+              value={source}
+              onChange={(e) => setSource(e.target.value)}
+              className="w-full h-12 bg-gray-50 dark:bg-zinc-900 border-none rounded-xl px-4 text-sm font-bold dark:text-white focus:ring-0"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 px-1">Sử dụng ví</label>
+            <div className="flex gap-2 overflow-x-auto hide-scrollbar py-1">
+              {wallets.map(w => (
+                <button 
+                  key={w.id} 
+                  onClick={() => setWalletId(w.id)}
+                  className={`flex items-center gap-2 px-4 py-3 rounded-2xl border transition-all shrink-0 ${walletId === w.id ? 'bg-black dark:bg-white text-white dark:text-black border-transparent shadow-lg' : 'bg-gray-50 dark:bg-zinc-900 text-gray-400 border-transparent'}`}
+                >
+                  <span className="material-symbols-outlined text-lg">{w.icon}</span>
+                  <span className="text-[11px] font-black whitespace-nowrap">{w.name}</span>
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </div>
 
+      {/* Button Xác nhận & Lưu */}
       <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto p-6 bg-gradient-to-t from-white dark:from-black via-white dark:via-black to-transparent z-50">
         <button 
           onClick={handleConfirm}
           className="w-full h-16 bg-black dark:bg-white text-white dark:text-black rounded-[2rem] font-black text-lg shadow-2xl active-scale transition-all flex items-center justify-center gap-3"
         >
-          Xác nhận & Lưu
-          <span className="material-symbols-outlined">check_circle</span>
+          Xác nhận & Trừ ví
+          <span className="material-symbols-outlined">send_money</span>
         </button>
       </div>
     </div>
