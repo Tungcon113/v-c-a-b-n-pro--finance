@@ -9,6 +9,7 @@ export interface Transaction {
   category: string;
   date: string;
   walletId?: string;
+  receiptImage?: string;
 }
 
 export interface ChatMessage {
@@ -40,5 +41,5 @@ export interface Wallet {
 export type Language = 'vi' | 'en';
 export type Currency = 'VND' | 'USD';
 
-export type AppTab = 'overview' | 'analysis' | 'assistant' | 'budget' | 'settings' | 'scanner' | 'split_bill' | 'edit_profile' | 'preview_profile' | 'personal_info' | 'change_password' | 'language' | 'currency' | 'wallets' | 'widget_config' | 'app_icon' | 'download_app';
+export type AppTab = 'overview' | 'analysis' | 'assistant' | 'budget' | 'settings' | 'scanner' | 'split_bill' | 'edit_profile' | 'preview_profile' | 'personal_info' | 'change_password' | 'language' | 'currency' | 'wallets' | 'widget_config' | 'app_icon' | 'download_app' | 'verification';
 export type AuthStep = 'welcome' | 'login' | 'register' | 'otp' | 'success';
