@@ -48,6 +48,8 @@ const App: React.FC = () => {
   const [currency, setCurrency] = useState<Currency>('VND');
   const [profileImage, setProfileImage] = useState('https://picsum.photos/400/400');
 
+  const [lastScannedData, setLastScannedData] = useState<any>(null);
+
   useEffect(() => {
     const users = JSON.parse(localStorage.getItem(USERS_STORAGE_KEY) || '[]');
     const loggedEmail = localStorage.getItem(CURRENT_USER_KEY);
@@ -182,8 +184,8 @@ const App: React.FC = () => {
       case 'change_password': return <ChangePassword onBack={() => setView('settings')} onSave={handleChangePassword} />;
       case 'language': return <LanguageSelection current={language} onBack={() => setView('settings')} onSelect={(l) => setLanguage(l)} />;
       case 'currency': return <CurrencySelection current={currency} onBack={() => setView('settings')} onSelect={(c) => setCurrency(c)} />;
-      case 'scanner': return <CameraScanner onBack={() => setView('overview')} onComplete={() => setView('verification')} />;
-      case 'verification': return <TransactionVerification wallets={wallets} onBack={() => setView('scanner')} onCancel={() => setView('overview')} onConfirm={handleAddTransaction} />;
+      case 'scanner': return <CameraScanner onBack={() => setView('overview')} onComplete={(data) => { setLastScannedData(data); setView('verification'); }} />;
+      case 'verification': return <TransactionVerification wallets={wallets} initialData={lastScannedData} onBack={() => setView('scanner')} onCancel={() => setView('overview')} onConfirm={handleAddTransaction} />;
       case 'split_bill': return <SplitBill onBack={() => setView('overview')} onScanClick={() => setView('scanner')} />;
       case 'widget_config': return <LockScreenWidget onBack={() => setView('settings')} balance={totalBalance} />;
       case 'app_icon': return <AppIconSelection onBack={() => setView('settings')} />;
