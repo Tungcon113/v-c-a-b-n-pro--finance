@@ -25,6 +25,7 @@ import LockScreenWidget from './components/LockScreenWidget';
 import AppIconSelection from './components/AppIconSelection';
 import DownloadApp from './components/DownloadApp';
 import TransactionVerification from './components/TransactionVerification';
+import ScanDecision from './components/ScanDecision';
 import { Transaction, AppTab, UserProfile, Language, Currency, Wallet, AuthStep } from './types';
 import { MOCK_TRANSACTIONS, INITIAL_WALLETS } from './constants';
 
@@ -49,6 +50,7 @@ const App: React.FC = () => {
   const [profileImage, setProfileImage] = useState('https://picsum.photos/400/400');
 
   const [lastScannedData, setLastScannedData] = useState<any>(null);
+  const [scannerPurpose, setScannerPurpose] = useState<'transaction' | 'split'>('transaction');
 
   useEffect(() => {
     const users = JSON.parse(localStorage.getItem(USERS_STORAGE_KEY) || '[]');
@@ -174,7 +176,7 @@ const App: React.FC = () => {
     const totalBalance = wallets.reduce((s, w) => s + w.balance, 0);
 
     switch (view) {
-      case 'overview': return <Dashboard transactions={transactions} wallets={wallets} onAddClick={() => setShowAddModal(true)} onAssistantClick={() => setView('assistant')} onWalletsClick={() => setView('wallets')} onSplitBillClick={() => setView('split_bill')} onUpdateWallet={(id, amt) => setWallets(prev => prev.map(w => w.id === id ? { ...w, balance: amt } : w))} profileImage={profileImage} currency={currency} />;
+      case 'overview': return <Dashboard transactions={transactions} wallets={wallets} onAddClick={() => setShowAddModal(true)} onAssistantClick={() => setView('assistant')} onWalletsClick={() => setView('wallets')} onSplitBillClick={() => { setScannerPurpose('split'); setView('scanner'); }} onUpdateWallet={(id, amt) => setWallets(prev => prev.map(w => w.id === id ? { ...w, balance: amt } : w))} profileImage={profileImage} currency={currency} />;
       case 'wallets': return <WalletsList wallets={wallets} onBack={() => setView('overview')} onUpdateWallet={(id, amt) => setWallets(prev => prev.map(w => w.id === id ? { ...w, balance: amt } : w))} currency={currency} />;
       case 'analysis': return <Analysis transactions={transactions} />;
       case 'assistant': return <Assistant transactions={transactions} wallets={wallets} monthlyLimit={monthlyLimit} onBack={() => setView('overview')} />;
@@ -184,9 +186,10 @@ const App: React.FC = () => {
       case 'change_password': return <ChangePassword onBack={() => setView('settings')} onSave={handleChangePassword} />;
       case 'language': return <LanguageSelection current={language} onBack={() => setView('settings')} onSelect={(l) => setLanguage(l)} />;
       case 'currency': return <CurrencySelection current={currency} onBack={() => setView('settings')} onSelect={(c) => setCurrency(c)} />;
-      case 'scanner': return <CameraScanner onBack={() => setView('overview')} onComplete={(data) => { setLastScannedData(data); setView('verification'); }} />;
-      case 'verification': return <TransactionVerification wallets={wallets} initialData={lastScannedData} onBack={() => setView('scanner')} onCancel={() => setView('overview')} onConfirm={handleAddTransaction} />;
-      case 'split_bill': return <SplitBill onBack={() => setView('overview')} onScanClick={() => setView('scanner')} />;
+      case 'scanner': return <CameraScanner onBack={() => setView('overview')} onComplete={(data) => { setLastScannedData(data); setView('scan_decision'); }} />;
+      case 'scan_decision': return <ScanDecision data={lastScannedData} onPersonal={() => setView('verification')} onSplit={() => setView('split_bill')} onCancel={() => setView('scanner')} />;
+      case 'verification': return <TransactionVerification wallets={wallets} initialData={lastScannedData} onBack={() => setView('scan_decision')} onCancel={() => setView('overview')} onConfirm={handleAddTransaction} />;
+      case 'split_bill': return <SplitBill onBack={() => setView('scan_decision')} onScanClick={() => setView('scanner')} initialBillData={lastScannedData} />;
       case 'widget_config': return <LockScreenWidget onBack={() => setView('settings')} balance={totalBalance} />;
       case 'app_icon': return <AppIconSelection onBack={() => setView('settings')} />;
       case 'download_app': return <DownloadApp onBack={() => setView('settings')} />;
@@ -206,7 +209,7 @@ const App: React.FC = () => {
           <AddTransaction 
             onClose={() => setShowAddModal(false)} 
             onSubmit={handleAddTransaction} 
-            onScanClick={() => { setShowAddModal(false); setView('scanner'); }} 
+            onScanClick={() => { setScannerPurpose('transaction'); setShowAddModal(false); setView('scanner'); }} 
             wallets={wallets}
           />
         </div>
